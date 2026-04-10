@@ -1,1 +1,3 @@
-Phân tích và thiết kế hệ thống 
+Phân tích và thiết kế hệ thống
+
+Ngô Hoàng Long
