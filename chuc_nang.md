@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 ### CHỨC NĂNG
+=======
+### CHỨC NĂNG 
+>>>>>>> 07475f6dd3f2c8e981c385216f3f998e26231fb0
 
 #### User:
 
@@ -9,6 +13,7 @@
 5. Giỏ hàng (thêm, xóa, sửa số lượng)
 6. Thanh toán & Đặt hàng
 7. Xem lịch sử đơn hàng cá nhân
+<<<<<<< HEAD
 
 #### Admin:
 
@@ -21,3 +26,5 @@
 4. Thống kê đơn giản (Số đơn, tổng tiền)
 
 5. Quản lý người dùng
+=======
+>>>>>>> 07475f6dd3f2c8e981c385216f3f998e26231fb0
