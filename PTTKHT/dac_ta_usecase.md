@@ -55,7 +55,6 @@
 * Mật khẩu và xác nhận mật khẩu không khớp → Hệ thống báo lỗi.
 * Không điền đủ thông tin bắt buộc → Hệ thống báo lỗi “Vui lòng nhập đầy đủ thông tin”.
 
-
 #### **3. Tìm kiếm và lọc sản phẩm**
 
 **Actor:** User
@@ -115,7 +114,6 @@
 * Sản phẩm không tồn tại hoặc đã bị xóa → Hệ thống báo lỗi “Sản phẩm không tìm thấy” và chuyển về trang danh sách sản phẩm.
 * Sản phẩm hết hàng → Hiển thị thông báo “Sản phẩm tạm hết hàng” và nút “Thêm vào giỏ hàng” bị vô hiệu hóa.
 
-
 #### 5. Quản lý giỏ hàng
 
 **Actor:** User
@@ -146,7 +144,6 @@
 * Sản phẩm hết hàng → Hệ thống thông báo “Sản phẩm đã hết hàng” và không cho thêm vào giỏ.
 * Giỏ hàng trống → Hiển thị thông báo “Giỏ hàng của bạn đang trống” và nút gợi ý quay về mua sắm.
 
-
 #### 6. Đặt hàng
 
 **Actor:** User
@@ -174,7 +171,6 @@
 * Thông tin nhận hàng thiếu hoặc sai định dạng → Hệ thống báo lỗi và yêu cầu nhập lại.
 * Giỏ hàng trống khi xác nhận → Hệ thống thông báo lỗi và chuyển về trang giỏ hàng.
 * Sản phẩm trong giỏ hết hàng trước khi đặt → Hệ thống thông báo và loại bỏ sản phẩm đó khỏi đơn hàng.
-
 
 #### 7. Lịch sử mua hàng
 
@@ -205,7 +201,6 @@
 * Người dùng chưa có đơn hàng nào → Hệ thống hiển thị thông báo “Bạn chưa có đơn hàng nào” và gợi ý quay về mua sắm.
 * Lỗi tải dữ liệu → Hiển thị thông báo lỗi và nút tải lại.
 
-
 #### 8. Chi tiết đơn hàng đã đặt
 
 **Actor:** User
@@ -235,7 +230,6 @@
 
 * Đơn hàng không tồn tại hoặc không thuộc về người dùng → Hệ thống báo lỗi và chuyển về trang lịch sử đơn hàng.
 
-
 #### 9. Cập nhật hồ sơ
 
 **Actor:** User
@@ -262,7 +256,6 @@
 * Nhập số điện thoại sai định dạng → Hệ thống báo lỗi “Số điện thoại không hợp lệ”.
 * Để trống các trường bắt buộc → Hệ thống báo “Vui lòng nhập đầy đủ thông tin”.
 * Lỗi hệ thống khi lưu → Hiển thị thông báo lỗi và giữ nguyên dữ liệu cũ.
-
 
 #### 10. Đổi mật khẩu
 
@@ -295,8 +288,6 @@
 * Mật khẩu mới và xác nhận mật khẩu không khớp → Báo lỗi “Mật khẩu xác nhận không khớp”.
 * Mật khẩu mới quá ngắn hoặc không đủ mạnh → Hệ thống báo “Mật khẩu phải có ít nhất 6 ký tự”.
 
-
-
 #### 11. Quản lý sản phẩm
 
 **Actor:** Admin
@@ -326,8 +317,7 @@
 * Để trống các trường bắt buộc (tên, giá) → Báo lỗi “Vui lòng nhập đầy đủ thông tin”.
 * Xóa sản phẩm đang có trong đơn hàng → Hệ thống cảnh báo trước khi xóa.
 
-
-#### * Quản lý danh mục
+#### 12. Quản lý danh mục
 
 **Actor:** Admin
 **Mô tả:** Quản trị viên thực hiện thêm, sửa, xóa các danh mục sản phẩm (ví dụ: Tai nghe, Ốp lưng, Sạc dự phòng, Chuột bàn phím, Phụ kiện laptop…).
@@ -355,3 +345,173 @@
 * Tên danh mục đã tồn tại → Hệ thống báo lỗi “Danh mục này đã tồn tại”.
 * Xóa danh mục đang có sản phẩm → Hệ thống cảnh báo “Danh mục đang chứa sản phẩm, không thể xóa” hoặc yêu cầu chuyển sản phẩm trước.
 * Để trống tên danh mục → Báo lỗi “Vui lòng nhập tên danh mục”.
+
+
+
+#### 13. Quản lý sản phẩm
+
+**Actor:** Admin
+**Mô tả:** Quản trị viên thực hiện thêm, sửa, xóa các sản phẩm, có thể thêm sản phẩm mới, thay đổi thông tin sản phẩm, hay là xóa các sản phẩm cũ đã hết hàng hoặc không bán nữa.
+
+**Pre-condition:** Admin đã đăng nhập vào trang quản trị.
+**Post-condition:** 
+
+* Dữ liệu sản phẩm được cập nhật vào cơ sở dữ liệu
+* Thông tin sản phẩm hiển thị chính xác trên website cho người dùng
+
+**Main Flow:**
+
+1. Admin truy cập vào trang “Quản lý sản phẩm” trong Admin Dashboard.
+2. Hệ thống hiển thị danh sách tất cả sản phẩm dưới dạng bảng (tên, giá, danh mục, tồn kho, hình ảnh,...).
+3. Admin có thể thực hiện các chức năng sau:
+   * **Thêm sản phẩm mới** : Nhấn nút “Thêm danh mục”, nhập tên sản phẩm, giá cả, mô tả, số lượng hàng, danh mục, hình ảnh..  → Lưu → Hệ thống lưu sản phẩm vào cơ sở dữ liệu.
+   * **Sửa sản phẩm**: Chọn sản phẩm cần sửa → Nhấn “Sửa” → Chỉnh sửa thông tin cần thết của sản phẩm → Lưu thay đổi → Hệ thống cập nhật dữ liệu.
+   * **Xóa sản phẩm** : Chọn sản phẩm càn xáo → Nhấn “Xóa” → Xác nhận xóa → Hệ thống xóa sản phẩm khỏi cơ sở dữ liệu.
+4. Hệ thống cập nhật dữ liệu ngay lập tức vào cơ sở dữ liệu.
+5. Danh sách sản phẩm được làm mới và cập nhật giao diện.
+
+**Alternative Flow:**
+
+* Admin có thể tìm kiếm sản phẩm theo tên hoặc lọc sản phẩm theo danh mục dễ dàng trong việc thay đổi sản phẩm cũng như là dễ dàng quản lý.
+
+**Exception Flow:**
+
+* Upload hình ảnh không hợp lệ → Hiển thị lỗi *“Hình ảnh không hợp lệ”*
+* Thiếu thông tin bắt buộc (tên, giá,...) → Hiển thị *“Vui lòng nhập đầy đủ thông tin”*
+* Xóa sản phẩm đang tồn tại trong đơn hàng:
+
+  * Hệ thống hiển thị cảnh báo trước khi xóa
+  * Có thể yêu cầu xác nhận thêm hoặc không cho xóa
+
+
+#### 14. Quản lý đơn hàng 
+
+**Actor:** Admin
+**Mô tả:** Cho phép Quản trị viên quản lý các đơn hàng do người dùng đặt, đặc biệt là các đơn hàng ở trạng thái  **“Chờ xác nhận”** .
+
+Quản trị viên có thể:
+
+* Xem danh sách đơn hàng
+* Xem chi tiết đơn hàng
+* Xác nhận đơn hàng
+* Cập nhật trạng thái đơn hàng (đang giao, hoàn thành, hủy)
+
+**Pre-condition:** 
+
+* Admin đã đăng nhập vào hệ thống quản trị
+* Có ít nhất một đơn hàng được tạo từ phía người dùng
+
+**Post-condition:**
+
+* Trạng thái đơn hàng được cập nhật chính xác trong hệ thống
+* Dữ liệu đơn hàng được lưu vào cơ sở dữ liệu
+* Người dùng có thể xem trạng thái đơn hàng đã được cập nhật
+
+**Main Flow:**
+
+1. Admin truy cập vào trang “Quản lý đơn hàng” trong Admin Dashboard.
+2. Hệ thống hiển thị danh sách các đơn hàng, bao gồm: Mã đơn hàng, Mã khách hàng, Tên khách hàng, Tên đơn hàng, Ngày đặt, Tổng tiền, Trạng thái (Chờ xác nhận / Đang giao / Đã hủy).
+3. Admin chọn một đơn hàng có trạng thái **“Chờ xác nhận”**
+4. Hệ thống hiển thị chi tiết đơn hàng:
+   * Danh sách sản phẩm (tên, số lượng, giá)
+   * Tổng tiền
+   * Thông tin người nhận (tên, SĐT, địa chỉ)
+5. Admin thực hiện một trong các hành động:
+
+* Xác nhận đơn hàng:
+  * Nhấn nút **“Xác nhận”**
+  * Hệ thống cập nhật trạng thái → **“Đang giao”**
+* Hủy đơn hàng:
+  * Nhấn nút **“Hủy đơn”**
+  * Nhập lý do hủy (tuỳ chọn)
+  * Hệ thống cập nhật trạng thái → **“Đã hủy”**
+* Cập nhật trạng thái giao hàng:
+
+6. Hệ thống cập nhật dữ liệu và làm mới danh sách đơn hàng.
+
+**Alternative Flow:**
+
+* Tìm kiếm đơn hàng theo mã đơn
+* Lọc theo trạng thái (Chờ xác nhận, Đang giao, Hoàn thành, Đã hủy)
+* Sắp xếp theo thời gian đặt hàng
+
+**Exception Flow:**
+
+* Đơn hàng không tồn tại → Hiển thị lỗi và quay về danh sách
+* Lỗi tải dữ liệu → Hiển thị thông báo lỗi và nút “Tải lại”
+* Không thể cập nhật trạng thái:
+  * Do lỗi hệ thống → Thông báo thất bại
+  * Do trạng thái không hợp lệ (ví dụ: đã hủy rồi vẫn cập nhật)
+
+**Quy tắc nghiệp vụ:**
+
+* Đơn hàng phải đi theo thứ tự trạng thái:
+
+  * **Chờ xác nhận → Đang giao → Hoàn thành**
+* Đơn hàng đã **hủy** hoặc **hoàn thành** không thể chỉnh sửa
+* Khi hủy đơn:
+
+  * Có thể hoàn lại số lượng sản phẩm vào kho
+* Khi xác nhận đơn:
+
+  * Có thể trừ số lượng tồn kho
+
+
+#### 15. Xem thống kê báo cáo
+
+**Actor:** Admin
+**Mô tả:** Cho phép Admin xem các số liệu thống kê tổng quan của hệ thống nhằm theo dõi tình hình kinh doanh và hoạt động của website.
+
+Các thông tin thống kê có thể bao gồm:
+
+* Doanh thu
+* Số lượng đơn hàng
+* Số lượng sản phẩm đã bán
+* Số lượng người dùng
+* Biểu đồ theo thời gian (ngày/tháng/năm)
+
+**Pre-condition:**
+
+* Admin đã đăng nhập vào hệ thống quản trị
+* Hệ thống đã có dữ liệu (đơn hàng, sản phẩm, người dùng,...)
+
+**Post-condition:**
+
+* Các dữ liệu thống kê được hiển thị chính xác
+* Không làm thay đổi dữ liệu hệ thống
+
+**Main Flow:**
+
+1. Admin truy cập vào chức năng **“Thống kê”** trong Admin Dashboard
+2. Hệ thống hiển thị màn hình thống kê tổng quan, bao gồm:
+   * Tổng doanh thu
+   * Tổng số đơn hàng
+   * Tổng số sản phẩm đã bán
+   * Tổng số người dùng
+3. Admin chọn khoảng thời gian cần xem:
+   * Theo ngày
+   * Theo tháng
+   * Theo năm
+4. Hệ thống hiển thị chi tiết đơn hàng:
+   * Danh sách sản phẩm (tên, số lượng, giá)
+   * Tổng tiền
+   * Thông tin người nhận (tên, SĐT, địa chỉ)
+5. Hệ thống cập nhật dữ liệu và biểu đồ tương ứng với khoảng thời gian đã chọn
+
+**Alternative Flow:**
+
+* Lọc theo loại thống kê (doanh thu, đơn hàng, sản phẩm)
+* Xem chi tiết từng phần (ví dụ: click vào biểu đồ để xem danh sách đơn hàng)
+* Xuất báo cáo (PDF/Excel)
+
+**Exception Flow:**
+
+* Không có dữ liệu trong khoảng thời gian chọn → Hiển thị “Không có dữ liệu”
+* Lỗi tải dữ liệu → Hiển thị thông báo lỗi và nút “Tải lại”
+* Khoảng thời gian không hợp lệ → Hệ thống yêu cầu chọn lại
+
+**Quy tắc nghiệp vụ:**
+
+* Doanh thu chỉ tính các đơn hàng **đã hoàn thành**
+* Đơn hàng bị **hủy** không được tính vào thống kê
+* Dữ liệu thống kê phải đồng bộ với cơ sở dữ liệu theo thời gian thực hoặc gần thời gian thực
