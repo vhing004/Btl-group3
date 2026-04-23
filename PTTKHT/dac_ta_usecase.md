@@ -154,7 +154,7 @@
 
 **Main Flow:**
 
-1. Người dùng vào trang Giỏ hàng và nhấn nút “Đặt hàng”.
+1. Người dùng vào trang Giỏ hàng và nhấn nút “Đặt hàng” hoặc là đặt hàng trực tiếp tại trang chi tiết sản phẩm.
 2. Hệ thống chuyển sang trang Đặt hàng và hiển thị thông tin giỏ hàng (danh sách sản phẩm + tổng tiền).
 3. Người dùng nhập thông tin nhận hàng: Họ tên, Số điện thoại, Địa chỉ giao hàng (có thể chọn địa chỉ mặc định nếu đã lưu).
 4. Người dùng kiểm tra lại thông tin đơn hàng.
@@ -288,34 +288,46 @@
 * Mật khẩu mới và xác nhận mật khẩu không khớp → Báo lỗi “Mật khẩu xác nhận không khớp”.
 * Mật khẩu mới quá ngắn hoặc không đủ mạnh → Hệ thống báo “Mật khẩu phải có ít nhất 6 ký tự”.
 
-#### 11. Quản lý sản phẩm
+#### 11. Quản lý người dùng
 
 **Actor:** Admin
-**Mô tả:** Quản trị viên thực hiện thêm, sửa, xóa và cập nhật thông tin sản phẩm trên website.
+**Mô tả:** Cho phép Admin quản lý toàn bộ tài khoản người dùng trong hệ thống.
 
-**Pre-condition:** Admin đã đăng nhập vào trang quản trị.
-**Post-condition:** Thông tin sản phẩm được thay đổi và hiển thị đúng trên website.
+* Xem thông tin chi tiết của người dùng
+* Theo dõi lịch sử mua hàng của người dùng
+
+Nhằm phục vụ việc quản lý tài khoản, hỗ trợ khách hàng và phân tích hành vi mua sắm.
+
+**Pre-condition:** 
+
+* Admin đã đăng nhập vào hệ thống
+* Hệ thống đã có dữ liệu người dùng
+
+
+**Post-condition:** 
+
+* Thông tin người dùng và lịch sử đơn hàng được hiển thị
+* Không làm thay đổi dữ liệu hệ thống
 
 **Main Flow:**
 
-1. Admin truy cập vào trang “Quản lý sản phẩm” trong Admin Dashboard.
-2. Hệ thống hiển thị danh sách tất cả sản phẩm hiện có dưới dạng bảng.
-3. Admin có thể thực hiện các chức năng sau:
-   * **Thêm sản phẩm mới** : Nhấn nút “Thêm sản phẩm”, điền thông tin (tên, giá, mô tả, số lượng tồn kho, danh mục), upload hình ảnh và nhấn lưu.
-   * **Sửa sản phẩm** : Chọn sản phẩm → Nhấn “Sửa” → Chỉnh sửa thông tin và hình ảnh → Lưu thay đổi.
-   * **Xóa sản phẩm** : Chọn sản phẩm → Nhấn “Xóa” → Xác nhận xóa.
-4. Hệ thống cập nhật dữ liệu vào cơ sở dữ liệu ngay lập tức.
-5. Danh sách sản phẩm được làm mới tự động.
+1. Admin truy cập vào trang “Quản lý người dùng” trong Admin Dashboard.
+2. Hệ thống hiển thị danh sách người dùng: Id, họ tên, email, số điện thoại, trạng thái tài khoản.
+3. Admin chọn chức năng xem chi tiét đơn hàng của một người dùng
+4. Hệ thống sẽ hiển thị ra thông tin lịch sử mua hàng của người dùng đó.
 
 **Alternative Flow:**
 
-* Admin có thể tìm kiếm sản phẩm theo tên hoặc danh mục trong trang quản lý.
+* Tìm kiếm người dùng theo tên/email
+* Lọc người dùng theo trạng thái
+* Lọc đơn hàng theo trạng thái (chờ xác nhận, đang giao,...)
+* Sắp xếp đơn hàng theo thời gian
 
 **Exception Flow:**
 
-* Upload hình ảnh sai định dạng hoặc quá lớn → Hệ thống báo lỗi “Hình ảnh không hợp lệ”.
-* Để trống các trường bắt buộc (tên, giá) → Báo lỗi “Vui lòng nhập đầy đủ thông tin”.
-* Xóa sản phẩm đang có trong đơn hàng → Hệ thống cảnh báo trước khi xóa.
+* Người dùng không tồn tại → Hiển thị lỗi
+* Người dùng chưa có đơn hàng → Hiển thị “Chưa có đơn hàng nào”
+* Lỗi tải dữ liệu → Hiển thị thông báo và cho phép tải lại
 
 #### 12. Quản lý danh mục
 
@@ -346,15 +358,13 @@
 * Xóa danh mục đang có sản phẩm → Hệ thống cảnh báo “Danh mục đang chứa sản phẩm, không thể xóa” hoặc yêu cầu chuyển sản phẩm trước.
 * Để trống tên danh mục → Báo lỗi “Vui lòng nhập tên danh mục”.
 
-
-
 #### 13. Quản lý sản phẩm
 
 **Actor:** Admin
 **Mô tả:** Quản trị viên thực hiện thêm, sửa, xóa các sản phẩm, có thể thêm sản phẩm mới, thay đổi thông tin sản phẩm, hay là xóa các sản phẩm cũ đã hết hàng hoặc không bán nữa.
 
 **Pre-condition:** Admin đã đăng nhập vào trang quản trị.
-**Post-condition:** 
+**Post-condition:**
 
 * Dữ liệu sản phẩm được cập nhật vào cơ sở dữ liệu
 * Thông tin sản phẩm hiển thị chính xác trên website cho người dùng
@@ -383,8 +393,7 @@
   * Hệ thống hiển thị cảnh báo trước khi xóa
   * Có thể yêu cầu xác nhận thêm hoặc không cho xóa
 
-
-#### 14. Quản lý đơn hàng 
+#### 14. Quản lý đơn hàng
 
 **Actor:** Admin
 **Mô tả:** Cho phép Quản trị viên quản lý các đơn hàng do người dùng đặt, đặc biệt là các đơn hàng ở trạng thái  **“Chờ xác nhận”** .
@@ -396,7 +405,7 @@ Quản trị viên có thể:
 * Xác nhận đơn hàng
 * Cập nhật trạng thái đơn hàng (đang giao, hoàn thành, hủy)
 
-**Pre-condition:** 
+**Pre-condition:**
 
 * Admin đã đăng nhập vào hệ thống quản trị
 * Có ít nhất một đơn hàng được tạo từ phía người dùng
@@ -455,7 +464,6 @@ Quản trị viên có thể:
 * Khi xác nhận đơn:
 
   * Có thể trừ số lượng tồn kho
-
 
 #### 15. Xem thống kê báo cáo
 
