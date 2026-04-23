@@ -32,7 +32,7 @@
 
 ## 9. Biểu đồ tuần tự quản lý danh mục(Admin)![SQ_QuanLyDanhMuc](images/SQ_QuanLyDanhMuc.jpg)
 
-## 10. Biểu đồ tuần tự xem trang chủ![SQ_XemTrangChu](images/SQ_XemTrangChu.jpg)
+## 10. Biểu đồ tuần tự quản lý người dùng (Admin)![SQ_QuanLyNguoiDung](images/SQ_QuanLyNguoiDung.jpg)
 
 ## 11. Biểu đồ tuần tự xem chi tiết đơn hàng đã đặt
 
@@ -46,7 +46,7 @@
 
 ![SQ_DoiMatKhau](images/SQ_DoiMatKhau.jpg)
 
-## 14. Biểu đồ tuần tự lịch sử mua 
+## 14. Biểu đồ tuần tự lịch sử mua
 
 ![SQ_LichSuMua](images/SQ_LichSuMua.jpg)
 
