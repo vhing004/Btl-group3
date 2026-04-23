@@ -4,7 +4,7 @@
 | :-: | ----------- | ------------------------------------ | ---------------------------------------------------------------------------- |
 |  1  | User        | Đăng ký                           | Tạo tài khoản mới                                                        |
 |  2  | User, Admin | Đăng nhập                         | Đăng nhập tài khoản vào hệ thống                                     |
-|  3  | User        | Xem trang chủ                       | Xem banner, sản phẩm nổi bật, sản<br />phẩm mới và giá rẻ          |
+|  3  | Amin        | Quản lý người dùng              | Xem thông tin khách hàng và các đơn hàng<br />đã đặt            |
 |  4  | User        | Tìm kiếm và lọc<br />sản phẩm  | Tìm kiếm theo từ khóa, lọc theo danh<br />mục và giá                 |
 |  5  | User        | Xem chi tiết sản<br /> phẩm       | Xem thông tin sản phẩm như hình<br />ảnh, giá cả, chi tiết          |
 |  6  | User        | Quản lý giỏ hàng                 | Thêm, thay đổi số lượng, xóa, sản<br />phẩm trong giỏ hàng        |
