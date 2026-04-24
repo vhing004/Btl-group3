@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
+      integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="app.css" />
+    <title>Trang chủ</title>
+  </head>
+  <body>
+    <!-- Header -->
+    <header class="header">
+      <nav class="header_nav container">
+        <!-- header container -->
+        <!-- Image Logo -->
+        <a href="#" class="header_logo">
+          <img src="./logo.png" alt="" class="header_img" />
+        </a>
+
+        <!-- SEARCH -->
+        <div class="header_section">
+          <div class="header_section-search">
+            <input type="text" placeholder="Tìm kiếm sản phẩm" />
+            <button>
+              <i class="fa-solid fa-magnifying-glass"></i>
+            </button>
+          </div>
+          <div class="header_section-category">
+            <a href="">Laptop</a>
+            <a href="">Tai nghe RGB</a>
+            <a href="">Chuột Gaming</a>
+            <a href="">Bàn phím cơ</a>
+            <a href="">Tai nghe không dây</a>
+            <a href="">Sạc laptop</a>
+          </div>
+        </div>
+        <!-- CART & ACCOUNT -->
+        <div class="header_cart">
+          <!-- cart -->
+          <a href="#" class="header_cart-cart">
+            <i class="fa-solid fa-cart-shopping"></i>
+            <span>18</span>
+          </a>
+          <!-- account -->
+          <a href="#" class="header_cart-account">
+            <div class="">
+              <i class="fa-solid fa-user"></i>
+            </div>
+            <!-- DROPDOWN -->
+            <div class="dropdown">
+              <div class="dropdown_head">
+                <img src="./assets/images/chill.jpg" alt="" />
+                <div class="dropdown_info">
+                  <h4 class="dropdown_name">Chill Gaming</h4>
+                  <span class="dropdown_username"> </span>
+                </div>
+              </div>
+              <div class="dropdown_inner">
+                <a href="./index.php">Trang chủ</a>
+                <a href="./pages/account.php">Trang cá nhân</a>
+                <a href="./pages/personal.php">Cài đặt</a>
+                <a href="./pages/cart.php">Lịch sử mua hàng</a>
+                <a href="./pages/logout.php">Đăng xuất</a>
+              </div>
+            </div>
+          </a>
+        </div>
+      </nav>
+    </header>
+  </body>
+</html>
