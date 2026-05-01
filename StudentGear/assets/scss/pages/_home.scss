@@ -1,0 +1,215 @@
+// BANNER
+.banner {
+  &__container {
+    display: grid;
+    grid-template-columns: 2fr 1fr; // Tỷ lệ banner chính và banner phụ
+    gap: 20px;
+  }
+
+  &__slider {
+    position: relative;
+    overflow: hidden;
+    max-width: 800px;
+    width: 100%;
+    & img {
+      height: 300px;
+      width: 100%;
+    }
+  }
+
+  &__sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+}
+
+// ARROW
+.arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.3);
+  color: white;
+  border: none;
+  padding: 15px 10px;
+  cursor: pointer;
+  z-index: 20;
+}
+.arrow:hover {
+  background: $hover;
+  color: #fff;
+}
+.pull-left {
+  left: 0;
+  border-radius: 0 4px 4px 0;
+}
+.pull-right {
+  right: 0;
+  border-radius: 4px 0 0 4px;
+}
+
+/* Reset lại container dots */
+.slick-dots {
+  position: static; /* Đưa xuống dưới ảnh thay vì đè lên */
+  display: flex !important;
+  width: 100%;
+  border: 1px solid $border;
+}
+
+.slick-dots li {
+  flex: 1; /* Chia đều chiều ngang cho tất cả các ô */
+  height: 60px;
+  display: grid;
+  place-items: center;
+  border-right: 1px solid #eee; /* Viền ngăn cách giữa các ô */
+  font-size: 13px;
+  padding: 0 20px;
+  text-align: center;
+  cursor: pointer;
+}
+
+/* Style cho văn bản bên trong */
+.slick-dots li button {
+  background: #fff; /* Nền trắng mặc định */
+  color: #333;
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: center;
+  border: none;
+  outline: none;
+  display: block;
+}
+
+/* Khi ô đó đang hiển thị (Active) */
+.slick-dots .slick-active {
+  background: $hover; /* Màu đỏ giống hình bạn gửi */
+  color: #fff;
+}
+
+/* Ẩn cái dấu chấm mặc định nếu nó còn xuất hiện */
+.slick-dots li button:before {
+  display: none;
+}
+
+// PRODUCT
+.hot {
+  margin-top: 20px;
+  &_head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 45px;
+    background-color: #c8dbf3;
+    border-radius: 4px;
+    margin-bottom: 20px;
+  }
+  &_title {
+    line-height: 45px;
+    padding-inline: 8px;
+    font-size: 18px;
+    font-weight: 500;
+    color: $bg_color;
+    background: $main-color;
+    text-transform: uppercase;
+    font-weight: 700;
+    border-radius: 4px;
+  }
+  &_all {
+    padding: 5px 14px;
+    border: 1px solid $hover;
+    color: $hover;
+    font-size: 13px;
+    margin-right: 20px;
+    border-radius: 4px;
+  }
+  &_list {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(200px, 1fr));
+    gap: 10px;
+
+    &__item {
+      background: #fff;
+      border-radius: 4px;
+      border: 1px solid $border;
+      overflow: hidden;
+      transition:
+        transform 0.3s ease,
+        box-shadow 0.3s ease;
+      padding: 10px;
+
+      &:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        .hot_list__img {
+          transform: scale(1.08);
+          transition: transform 0.4s ease;
+        }
+      }
+    }
+
+    &__media {
+      position: relative;
+      overflow: hidden; // Giữ ảnh trong khung khi phóng to
+      aspect-ratio: 1 / 1;
+      margin-bottom: 10px;
+    }
+
+    &__img {
+      transition: transform 0.4s ease;
+      &:hover {
+        transform: scale(1.08);
+      }
+    }
+
+    &__badge {
+      position: absolute;
+      top: 0;
+      left: 0;
+      background: $hover;
+      color: #fff;
+      font-size: 11px;
+      font-weight: bold;
+      padding: 4px 8px;
+      z-index: 2;
+      border-bottom-right-radius: 10px;
+    }
+    &__title {
+      font-size: 13px;
+      line-height: 1.4;
+      margin-bottom: 8px;
+      color: $bg_color;
+    }
+
+    &__price-box {
+      margin-bottom: 6px;
+    }
+
+    &__price-old {
+      font-size: 12px;
+      color: #999;
+      text-decoration: line-through;
+      margin-right: 5px;
+    }
+
+    &__price-current {
+      font-size: 15px;
+      color: $hover;
+      font-weight: bold;
+    }
+
+    &__rating {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+    }
+
+    &__stars {
+      color: #ffbe00;
+    }
+
+    &__count {
+      color: #666;
+    }
+  }
+}
