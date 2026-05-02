@@ -1,11 +1,11 @@
 ## Use Case Tổng
 
-![Usecase tổng](images/usecase_tong.png)
+![Usecase tổng](images/UC_Tong.jpg)
 
 ## Use Case User
 
-![Usecase user](images/usecase_user.png)
+![Usecase user](images/UC_User.jpg)
 
 ## Use Case Admin
 
-![Usecase admin](images/usecase_admin.png)
+![Usecase admin](images/UC_Admin.jpg)
