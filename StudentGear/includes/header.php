@@ -3,7 +3,8 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-require_once 'C:/xampp/htdocs/StudentGear/config/db.php';
+require_once 'C:/xampp/htdocs/định hướng/Btl-group3/StudentGear/config/db.php';
+// require_once 'C:/xampp/htdocs/StudentGear/config/db.php';
 
 // 1. Truy vấn lấy 8 danh mục đang hoạt động từ Database
 $sql_categories = "SELECT * FROM categories WHERE is_active = 1 LIMIT 8";
@@ -28,7 +29,7 @@ if (isset($_SESSION['user_id'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="shortcut icon" href="<?php echo BASE_URL; ?>assets/images/logo.jpg" type="image/x-icon">
+    <link rel="shortcut icon" href="<?php echo BASE_URL; ?>assets/images/favicon.png" type="image/x-icon">
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>assets/css/main.css">
     <title>StudentGear - Phụ kiện sinh viên</title>
 </head>
@@ -70,12 +71,12 @@ if (isset($_SESSION['user_id'])) {
 
                                     <ul class="header_user-menu">
                                         <li class="header_user-item">
-                                            <a href="<?php echo BASE_URL; ?>profile.php">
+                                            <a href="<?php echo BASE_URL; ?>pages/profile.php">
                                                 <i class="fa-regular fa-user"></i> Tài khoản của tôi
                                             </a>
                                         </li>
                                         <li class="header_user-item">
-                                            <a href="<?php echo BASE_URL; ?>order_history.php">
+                                            <a href="<?php echo BASE_URL; ?>pages/history_order.php">
                                                 <i class="fa-solid fa-clipboard-list"></i> Đơn mua
                                             </a>
                                         </li>
