@@ -3,8 +3,7 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-require_once 'C:/xampp/htdocs/định hướng/Btl-group3/StudentGear/config/db.php';
-// require_once 'C:/xampp/htdocs/StudentGear/config/db.php';
+require_once __DIR__ . '/../config/db.php';
 
 // 1. Truy vấn lấy 8 danh mục đang hoạt động từ Database
 $sql_categories = "SELECT * FROM categories WHERE is_active = 1 LIMIT 8";
@@ -66,7 +65,7 @@ if (isset($_SESSION['user_id'])) {
                                 <div class="header_user">
                                     <div class="header_user-info">
                                         <i class="fa-solid fa-circle-user"></i>
-                                        <span class="header_user-name"><?php echo htmlspecialchars($_SESSION['username']); ?></span>
+                                        <span class="header_user-name"><?php echo htmlspecialchars($_SESSION['fullname']); ?></span>
                                     </div>
 
                                     <ul class="header_user-menu">
