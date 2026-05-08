@@ -113,6 +113,7 @@ $color-products: #fd7e14;
   }
 }
 
+// 4. COMPONENTS
 
 // Grid cho các thẻ thống kê
 .stats-grid {
@@ -251,8 +252,8 @@ $color-products: #fd7e14;
 .text-danger {
   color: #e74c3c !important;
 }
-// MODAL STYLES
 
+// MODAL STYLES
 .modal {
   display: none; // Mặc định ẩn
   position: fixed;
@@ -400,6 +401,7 @@ select.auth-form__input {
     opacity: 1;
   }
 }
+
 // Responsive
 @media (max-width: 992px) {
   .admin-wrapper {
@@ -413,4 +415,5 @@ select.auth-form__input {
   .main-content {
     padding: 20px;
   }
+
 }
