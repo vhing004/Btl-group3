@@ -1,4 +1,5 @@
 ﻿*,
+*,
 *::before,
 *::after {
   margin: 0;
@@ -824,4 +825,228 @@ button {
     grid-template-columns: 1fr;
     gap: 30px;
   }
+=======
+  display: block;
+}
+.slick-dots .slick-active {
+  background: #d72027;
+  color: #fff;
+}
+.slick-dots li button:before {
+  display: none;
+}
+.hot {
+  margin-top: 20px;
+}
+.hot_head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 45px;
+  background-color: #c8dbf3;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
+.hot_title {
+  line-height: 45px;
+  padding-inline: 8px;
+  font-size: 18px;
+  font-weight: 500;
+  color: #353535;
+  background: #fed100;
+  text-transform: uppercase;
+  font-weight: 700;
+  border-radius: 4px;
+}
+.hot_all {
+  padding: 5px 14px;
+  border: 1px solid #d72027;
+  color: #d72027;
+  font-size: 13px;
+  margin-right: 20px;
+  border-radius: 4px;
+}
+.hot_list {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(200px, 1fr));
+  gap: 10px;
+}
+.hot_list__item {
+  background: #fff;
+  border-radius: 4px;
+  border: 1px solid #c9d3dd;
+  overflow: hidden;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+  padding: 10px;
+}
+.hot_list__item:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+.hot_list__item:hover .hot_list__img {
+  transform: scale(1.08);
+  transition: transform 0.4s ease;
+}
+.hot_list__media {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 1/1;
+  margin-bottom: 10px;
+}
+.hot_list__img {
+  transition: transform 0.4s ease;
+}
+.hot_list__img:hover {
+  transform: scale(1.08);
+}
+.hot_list__badge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: #d72027;
+  color: #fff;
+  font-size: 11px;
+  font-weight: bold;
+  padding: 4px 8px;
+  z-index: 2;
+  border-bottom-right-radius: 10px;
+}
+.hot_list__title {
+  font-size: 13px;
+  line-height: 1.4;
+  margin-bottom: 8px;
+  color: #353535;
+}
+.hot_list__price-box {
+  margin-bottom: 6px;
+}
+.hot_list__price-old {
+  font-size: 12px;
+  color: #999;
+  text-decoration: line-through;
+  margin-right: 5px;
+}
+.hot_list__price-current {
+  font-size: 15px;
+  color: #d72027;
+  font-weight: bold;
+}
+.hot_list__rating {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+}
+.hot_list__stars {
+  color: #ffbe00;
+}
+.hot_list__count {
+  color: #666;
+}
+.footer {
+  font-family: "Arial", sans-serif;
+  color: #333;
+  background: #ffeb01;
+  padding: 40px 0;
+  margin-top: 30px;
+}
+.footer__row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 20px;
+}
+.footer__left {
+  flex: 1;
+}
+.footer__left li {
+  margin-bottom: 10px;
+  font-size: 16px;
+  line-height: 1.6;
+  font-weight: 700;
+}
+.footer__left iframe {
+  margin-top: 15px;
+  width: 250px;
+  height: 250px;
+}
+.footer__left-bottom {
+  display: flex;
+  gap: 50px;
+}
+.footer__top {
+  display: flex;
+  gap: 40px;
+  justify-content: space-between;
+  flex: 1;
+}
+.footer__title {
+  color: #d0021c;
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 15px;
+  text-transform: uppercase;
+}
+.footer__title--news {
+  margin-top: 25px;
+}
+.footer__list {
+  list-style: none;
+  padding: 0;
+}
+.footer__list a:hover {
+  color: #d0021c;
+}
+.footer__list a.highlight {
+  color: #d0021c;
+}
+.footer__sub-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: #d0021c;
+  margin: 20px 0 10px;
+}
+.footer__link-map {
+  font-size: 14px;
+  color: #007bff;
+  text-decoration: none;
+}
+.footer__form {
+  display: flex;
+  margin-top: 15px;
+}
+.footer__form input {
+  flex: 1;
+  padding: 10px 15px;
+  border: 1px solid #ddd;
+  border-radius: 25px 0 0 25px;
+  background: #f9f9f9;
+}
+.footer__form button {
+  padding: 10px 25px;
+  background: #111;
+  color: #fff;
+  border: none;
+  border-radius: 0 25px 25px 0;
+  cursor: pointer;
+  font-weight: bold;
+}
+.footer__bottom {
+  background-color: #ffed00;
+  padding: 20px 0;
+  font-size: 13px;
+}
+.footer__info-company {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  padding-bottom: 15px;
+  margin-bottom: 15px;
+}
+.footer__copyright {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
 }

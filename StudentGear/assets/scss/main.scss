@@ -1,6 +1,5 @@
-@use "./base/reset";
-@use "./base/variables" as v;
-@use "./components/header";
-@use "./pages/home";
-@use "./components/footer";
-@use "./pages/detail_product";
+@import "./base/reset";
+@import "./base/variables";
+@import "./components/header";
+@import "./pages/home";
+@import "./components/footer";
