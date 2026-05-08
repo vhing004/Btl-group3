@@ -1,5 +1,5 @@
 <?php
-require_once 'C:/xampp/htdocs/StudentGear/config/db.php';
+require_once 'C:/xampp/htdocs/Btl-group3/StudentGear/config/db.php';
 
 // Lấy danh sách sản phẩm + tên danh mục
 $sql = "SELECT 
