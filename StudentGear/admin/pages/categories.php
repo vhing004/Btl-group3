@@ -2,8 +2,6 @@
 // 1. Khởi động session và kết nối cơ sở dữ liệu
 session_start();
 
-$_SESSION['user_id'] = 1;
-$_SESSION['role'] = 'admin';//xóa !!
 require_once '../../config/db.php';
 
 
