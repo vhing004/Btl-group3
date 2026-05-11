@@ -5,6 +5,13 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 require_once __DIR__ . '/../config/db.php';
 
+// Kiểm tra nếu là Admin thì không cho phép truy cập trang này
+if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'moderator', 'staff'])) {
+    // Điều hướng admin về trang quản trị của họ
+    header("Location: " . BASE_URL . "admin/dashboard.php");
+    exit();
+}
+
 // 1. Truy vấn lấy 8 danh mục đang hoạt động từ Database
 $sql_categories = "SELECT * FROM categories WHERE is_active = 1 LIMIT 8";
 $res_categories = $conn->query($sql_categories);

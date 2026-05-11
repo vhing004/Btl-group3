@@ -6,7 +6,7 @@ require_once '../config/db.php';
 // Nếu người dùng đã đăng nhập rồi thì đá về trang tương ứng
 if (isset($_SESSION['user_id'])) {
     if (isset($_SESSION['role'])) {
-        header("Location: " . BASE_URL . "admin/dashboard.php"); // Đường dẫn trang admin của bạn
+        header("Location: " . BASE_URL . "admin/index.php"); // Đường dẫn trang admin của bạn
     } else {
         header("Location: " . BASE_URL . "index.php");
     }
@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login_submit'])) {
                 $_SESSION['fullname'] = $user['fullname'];
                 $_SESSION['role'] = $user['role']; // Lưu role để phân biệt
 
-                header("Location: " . BASE_URL . "admin/dashboard.php"); // Chuyển hướng sang Admin
+                header("Location: " . BASE_URL . "admin/index.php"); // Chuyển hướng sang Admin
                 exit();
             } else {
                 $error = "Mật khẩu Admin không chính xác!";
