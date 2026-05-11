@@ -3,13 +3,17 @@
 session_start();
 require_once '../config/db.php';
 
-// Chỉ ADMIN được truy cập 
+/**
+ * 2. LOGIC BẢO MẬT: Chỉ Admin/Staff mới được vào
+ * Kiểm tra user_id (đã đăng nhập) và role (là tài khoản admin)
+ */
 if (!isset($_SESSION['user_id']) || !isset($_SESSION['role'])) {
     // Nếu không phải admin, đẩy về trang login ở thư mục gốc
-    header("Location: " . BASE_URL . "./auth/login.php");
+    header("Location: " . BASE_URL . "../auth/login.php");
     exit();
 }
 
+// 3. TRUY VẤN DỮ LIỆU THỐNG KÊ (Dashboard Logic)
 // Lấy tổng quan doanh thu, đơn hàng từ database
 $sql_stats = "SELECT 
     COUNT(id) as total_orders, 
@@ -42,35 +46,7 @@ $recent_orders = $conn->query($sql_recent);
 <body class="admin-body">
 
     <div class="admin-wrapper">
-        <?php
-        $current_page = basename($_SERVER['PHP_SELF']);
-        ?>
-        <aside class="sidebar">
-            <div class="sidebar__brand">
-                <h4>Student<span style="color: #d0021c;">Gear</span></h4>
-            </div>
-            <nav class="sidebar__nav">
-                <a href="<?php echo BASE_URL; ?>admin/dashboard.php" class="<?= ($current_page == 'dashboard.php') ? 'active' : '' ?>">
-                    <i class="fas fa-tachometer-alt"></i> Dashboard
-                </a>
-                <a href="<?php echo BASE_URL; ?>admin/pages/categories.php" class="<?= ($current_page == 'categories.php') ? 'active' : '' ?>">
-                    <i class="fa-solid fa-table-cells-large"></i> Danh mục
-                </a>
-                <a href="<?php echo BASE_URL; ?>admin/pages/products.php" class="<?= ($current_page == 'products.php') ? 'active' : '' ?>">
-                    <i class="fas fa-laptop"></i> Sản phẩm
-                </a>
-                <a href="<?php echo BASE_URL; ?>admin/pages/orders.php" class="<?= ($current_page == 'orders.php') ? 'active' : '' ?>">
-                    <i class="fas fa-shopping-cart"></i> Đơn hàng
-                </a>
-                <a href="<?php echo BASE_URL; ?>admin/pages/users.php" class="<?= ($current_page == 'users.php') ? 'active' : '' ?>">
-                    <i class="fas fa-users"></i> Khách hàng
-                </a>
-                <div class="sidebar__divider"></div>
-                <a href="<?php echo BASE_URL; ?>auth/logout.php" class="text-danger">
-                    <i class="fas fa-sign-out-alt"></i> Đăng xuất
-                </a>
-            </nav>
-        </aside>
+        <?php include_once './includes/sidebar.php'; ?>
 
         <main class="main-content">
             <header class="main-content__header">

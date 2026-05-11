@@ -1,7 +1,6 @@
 <?php
 // 1. Khởi động session và kết nối cơ sở dữ liệu
 session_start();
-
 require_once '../../config/db.php';
 
 
@@ -32,35 +31,7 @@ $categories = $conn->query("SELECT * FROM categories ORDER BY is_active DESC, id
 
 <body class="admin-body">
     <div class="admin-wrapper">
-        <?php
-$current_page = basename($_SERVER['PHP_SELF']);
-?>
-<aside class="sidebar">
-    <div class="sidebar__brand">
-        <h4>Student<span style="color: #d0021c;">Gear</span></h4>
-    </div>
-    <nav class="sidebar__nav">
-        <a href="<?php echo BASE_URL; ?>admin/index.php" class="<?= ($current_page == 'index.php') ? 'active' : '' ?>">
-            <i class="fas fa-tachometer-alt"></i> Dashboard
-        </a>
-        <a href="<?php echo BASE_URL; ?>admin/pages/categories.php" class="<?= ($current_page == 'categories.php') ? 'active' : '' ?>">
-            <i class="fa-solid fa-table-cells-large"></i> Danh mục
-        </a>
-        <a href="<?php echo BASE_URL; ?>admin/pages/products.php" class="<?= ($current_page == 'products.php') ? 'active' : '' ?>">
-            <i class="fas fa-laptop"></i> Sản phẩm
-        </a>
-        <a href="<?php echo BASE_URL; ?>admin/pages/orders.php" class="<?= ($current_page == 'orders.php') ? 'active' : '' ?>">
-            <i class="fas fa-shopping-cart"></i> Đơn hàng
-        </a>
-        <a href="<?php echo BASE_URL; ?>admin/pages/users.php" class="<?= ($current_page == 'users.php') ? 'active' : '' ?>">
-            <i class="fas fa-users"></i> Khách hàng
-        </a>
-        <div class="sidebar__divider"></div>
-        <a href="<?php echo BASE_URL; ?>auth/logout.php" class="text-danger">
-            <i class="fas fa-sign-out-alt"></i> Đăng xuất
-        </a>
-    </nav>
-</aside>
+        <?php include_once '../includes/sidebar.php'; ?>
 
         <main class="main-content">
             <header class="main-content__header">
@@ -112,6 +83,22 @@ $current_page = basename($_SERVER['PHP_SELF']);
             </section>
         </main>
     </div>
+
+    <!-- ADD MODAL
+    <div id="addModal" class="modal" style="display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.5);">
+        <div style="background:#fff; width:500px; margin:10% auto; padding:20px; border-radius:8px;">
+            <h3>Thêm danh mục mới</h3><br>
+            <form action="handlers/add_category.php" method="POST" enctype="multipart/form-data">
+                <input type="text" name="name" placeholder="Tên danh mục" class="auth-form__input" required><br><br>
+                <input type="text" name="slug" placeholder="Slug (ví dụ: laptop-sinh-vien)" class="auth-form__input" required><br><br>
+                <textarea name="description" placeholder="Mô tả" class="auth-form__input" style="height:80px;"></textarea><br><br>
+                <label>Hình ảnh:</label>
+                <input type="file" name="image" required><br><br>
+                <button type="submit" class="btn-primary">Lưu danh mục</button>
+                <button type="button" onclick="document.getElementById('addModal').style.display='none'">Hủy</button>
+            </form>
+        </div>
+    </div> -->
     <div id="addModal" class="modal">
         <div class="modal__content">
             <h3>Thêm danh mục mới</h3>

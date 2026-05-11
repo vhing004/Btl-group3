@@ -1,7 +1,7 @@
 {
-  "name": "techshop",
+  "name": "studentgear",
   "version": "1.0.0",
-  "description": "Website bán đồ công nghệ giá rẻ cho sinh viên - PHP + MySQL",
+  "description": "Website bán đồ công nghệ giá rẻ cho sinh viên",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
