@@ -1,4 +1,3 @@
-// HEADER
 .header {
   width: 100%;
   height: 100px;
@@ -148,7 +147,6 @@
   padding: 0 10px;
   cursor: pointer;
 
-  // Khi di chuột vào khối user thì hiện menu
   &:hover .header_user-menu {
     display: block;
   }
@@ -174,7 +172,7 @@
     position: absolute;
     z-index: 100;
     padding: 8px 0;
-    top: calc(100% + 8px); // Cách header một khoảng nhỏ
+    top: calc(100% + 8px); 
     right: 0;
     width: 170px;
     background-color: #fff;
@@ -184,7 +182,7 @@
     display: none; // Mặc định ẩn
     animation: fadeIn ease-in 0.2s;
 
-    // Lớp đệm để không bị mất hover khi di chuyển chuột xuống
+    // di chuột không bị mất hover 
     &::before {
       content: "";
       position: absolute;
