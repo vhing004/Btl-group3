@@ -3,7 +3,6 @@
 session_start();
 require_once '../../config/db.php';
 
-
 /**
  * 2. LOGIC BẢO MẬT: Chỉ Admin/Staff mới được vào
  * Kiểm tra user_id (đã đăng nhập) và role (là tài khoản admin)
