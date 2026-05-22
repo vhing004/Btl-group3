@@ -5,8 +5,8 @@ $username = 'root';
 $password = '';
 $dbname = 'studentgear';
 
-$conn = new mysqli($localhost, $username, $password, $dbname);
-
+##$conn = new mysqli($localhost, $username, $password, $dbname);
+$conn = new mysqli($localhost, $username, $password, $dbname, 3307);
 if ($conn->connect_error) {
     die("Kết nối thất bại: " . $conn->connect_error);
 }
