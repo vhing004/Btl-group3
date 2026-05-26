@@ -1,10 +1,10 @@
+## AC_DangKy
+
+![Activity Diagram Đăng ký tài khoản](images/AC_DangKy.png)
+
 ## AC_DangNhap
 
 ![Activity Diagram Đăng nhập](images/AC_DangNhap.png)
-
-## AC_DangKy
-
-![Activity Diagram Đăng ký](images/AC_DangKy.png)
 
 ## AC_TimKiemVaLoc
 
@@ -22,21 +22,17 @@
 
 ![Activity Diagram Đặt hàng](images/AC_DatHang.png)
 
-## AC_LichSuMuaHang
+## AC_QuanLyDonHangUser
 
-![Activity Diagram Lịch sử mua hàng](images/AC_LichSuMuaHang.png)
-
-## AC_ChiTietDonHangDaDat
-
-![Activity Diagram Chi tiết đơn hàng đã đặt](images/AC_ChiTietDonHangDaDat.png)
+![Activity Diagram Quản lý đơn hàng bên User](images/AC_QuanLyDonHangUser.png)
 
 ## AC_CapNhatHoSo
 
 ![Activity Diagram Cập nhật hồ sơ](images/AC_CapNhatHoSo.png)
 
-## AC_DoiMatKhau
+## AC_QuanLyNguoiDung
 
-![Activity Diagram Đổi mật khẩu](images/AC_DoiMatKhau.png)
+![Activity Diagram Quản lý người dùng](images/AC_QuanLyNguoiDung.png)
 
 ## AC_QuanLySanPham
 
@@ -46,10 +42,10 @@
 
 ![Activity Diagram Quản lý danh mục](images/AC_QuanLyDanhMuc.png)
 
-## AC_QuanLyDonHang
+## AC_QuanLyDonHangAdmin
 
-![Activity Diagram Quản lý đơn hàng](images/AC_QuanLyDonHang.png)
+![Activity Diagram Quản lý đơn hàng bên Admin](images/AC_QuanLyDonHangAdmin.png)
 
 ## AC_XemThongKeBaoCao
 
-![Activity Diagram Xem thống kê báo cáo](images/AC_XemThongKeBaoCao.png)
+![Activity Diagram Thống kê và báo cáo](images/AC_XemThongKeBaoCao.png)
