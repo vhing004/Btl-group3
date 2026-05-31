@@ -2,104 +2,298 @@
 session_start();
 require_once '../../config/db.php';
 
-// Logic bảo mật tương tự categories.php
+// Kiểm tra quyền hạn bảo mật hệ thống
 if (!isset($_SESSION['user_id']) || !isset($_SESSION['role'])) {
     header("Location: ../auth/login.php");
     exit();
 }
 
+$admin_id = $_SESSION['user_id'];
+$tab = isset($_GET['tab']) ? trim($_GET['tab']) : 'orders';
+
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
-$status_filter = isset($_GET['status_filter']) ? $_GET['status_filter'] : '';
+$status_filter = isset($_GET['status_filter']) ? trim($_GET['status_filter']) : '';
+$target_user_id = isset($_GET['user_id']) ? (int)$_GET['user_id'] : 0;
 
-// 1. Xây dựng câu SQL cơ bản
-$sql = "SELECT o.*, u.fullname 
-        FROM orders o 
-        LEFT JOIN users u ON o.user_id = u.id 
-        WHERE 1=1"; // Mẹo để nối chuỗi AND dễ hơn
+// CẬP NHẬT: Mặc định lấy Tháng và Năm hiện tại của hệ thống nếu không có tham số GET
+$month_filter = isset($_GET['month_filter']) ? trim($_GET['month_filter']) : date('n'); // 'n' trả về 1 đến 12 không có số 0 ở trước
+$year_filter = isset($_GET['year_filter']) ? trim($_GET['year_filter']) : date('Y');   // 'Y' trả về năm 4 chữ số (VD: 2026)
 
-// 2. Thêm điều kiện tìm kiếm văn bản (Mã đơn, SĐT, Tên)
-if (!empty($search)) {
-    $sql .= " AND (o.order_code LIKE '%$search%' 
-                OR o.shipping_phone LIKE '%$search%' 
-                OR o.shipping_name LIKE '%$search%' 
-                OR u.fullname LIKE '%$search%')";
+// Nếu admin cố tình chọn "Tất cả tháng" hoặc "Tất cả năm" (giá trị trống), hệ thống sẽ gán chuỗi rỗng
+if (isset($_GET['month_filter']) && $_GET['month_filter'] === '') {
+    $month_filter = '';
+}
+if (isset($_GET['year_filter']) && $_GET['year_filter'] === '') {
+    $year_filter = '';
 }
 
-// 3. Thêm điều kiện lọc trạng thái
-if (!empty($status_filter)) {
-    $sql .= " AND o.status = '$status_filter'";
-}
+// Xây dựng chuỗi Query String để giữ bộ lọc khi Redirect điều hướng URL
+$redirect_params = [];
+if (!empty($tab)) $redirect_params['tab'] = $tab;
+if (!empty($search)) $redirect_params['search'] = $search;
+if (!empty($status_filter)) $redirect_params['status_filter'] = $status_filter;
+if ($target_user_id > 0) $redirect_params['user_id'] = $target_user_id;
+if ($month_filter !== '') $redirect_params['month_filter'] = $month_filter;
+if ($year_filter !== '') $redirect_params['year_filter'] = $year_filter;
 
-$sql .= " ORDER BY o.created_at DESC";
-$orders = $conn->query($sql);
+// HOẠT ĐỘNG 1: CẬP NHẬT TRẠNG THÁI ĐƠN HÀNG THỦ CÔNG (TAB ORDERS)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_status') {
+    $order_id = (int)$_POST['order_id'];
+    $new_status = trim($_POST['status']);
+    $note = trim($_POST['note'] ?? '');
 
-// Hàm hỗ trợ hiển thị Badge trạng thái
-function getStatusBadge($status)
-{
-    $class = '';
-    $text = '';
-    switch ($status) {
-        case 'pending':
-            $class = 'badge-warning';
-            $text = 'Chờ xử lý';
-            break;
-        case 'confirmed':
-            $class = 'badge-info';
-            $text = 'Đã xác nhận';
-            break;
-        case 'shipping':
-            $class = 'badge-primary';
-            $text = 'Đang giao';
-            break;
-        case 'delivered':
-            $class = 'badge-success';
-            $text = 'Đã giao';
-            break;
-        case 'cancelled':
-            $class = 'badge-danger';
-            $text = 'Đã hủy';
-            break;
-        default:
-            $class = 'badge-secondary';
-            $text = $status;
+    // Đọc các tham số bộ lọc từ Form POST ẩn để phục vụ chuyển trang chuẩn xác
+    $p_tab = trim($_POST['redirect_tab'] ?? 'orders');
+    $p_search = trim($_POST['redirect_search'] ?? '');
+    $p_status = trim($_POST['redirect_status_filter'] ?? '');
+    $p_user_id = (int)($_POST['redirect_user_id'] ?? 0);
+    $p_month = isset($_POST['redirect_month_filter']) ? trim($_POST['redirect_month_filter']) : '';
+    $p_year = isset($_POST['redirect_year_filter']) ? trim($_POST['redirect_year_filter']) : '';
+
+    $post_params = [];
+    if (!empty($p_tab)) $post_params['tab'] = $p_tab;
+    if (!empty($p_search)) $post_params['search'] = $p_search;
+    if (!empty($p_status)) $post_params['status_filter'] = $p_status;
+    if ($p_user_id > 0) $post_params['user_id'] = $p_user_id;
+    if ($p_month !== '') $post_params['month_filter'] = $p_month;
+    if ($p_year !== '') $post_params['year_filter'] = $p_year;
+
+    // Lấy trạng thái hiện tại từ DB để kiểm tra tính hợp lệ của luồng đi
+    $stmt_old = $conn->prepare("SELECT status FROM orders WHERE id = ?");
+    $stmt_old->bind_param("i", $order_id);
+    $stmt_old->execute();
+    $res_old = $stmt_old->get_result()->fetch_assoc();
+
+    if ($res_old) {
+        $old_status = $res_old['status'];
+
+        $status_weights = [
+            'pending'   => 1,
+            'confirmed' => 2,
+            'shipping'  => 3,
+            'delivered' => 4,
+            'cancelled' => 5,
+            'returned'  => 6
+        ];
+
+        // Quy tắc Ràng buộc 1 & 2: Không được sửa lùi hoặc giữ nguyên trạng thái cũ
+        if ($status_weights[$new_status] <= $status_weights[$old_status]) {
+            $post_params['msg'] = 'error_invalid_flow';
+            header("Location: orders.php?" . http_build_query($post_params));
+            exit();
+        }
+
+        // Quy tắc Ràng buộc 3: Không cho phép đi tắt từ "Chờ xử lý" sang "Đã giao"
+        if ($old_status === 'pending' && $new_status === 'delivered') {
+            $post_params['msg'] = 'error_pending_to_delivered';
+            header("Location: orders.php?" . http_build_query($post_params));
+            exit();
+        }
+
+        $payment_update = '';
+        if ($new_status === 'delivered') {
+            $payment_update = ", payment_status = 'paid', delivered_at = NOW()";
+        }
+
+        $sql_update = "UPDATE orders SET status = ?, updated_at = NOW() $payment_update WHERE id = ?";
+        $stmt_update = $conn->prepare($sql_update);
+        $stmt_update->bind_param("si", $new_status, $order_id);
+
+        if ($stmt_update->execute()) {
+            $stmt_history = $conn->prepare("INSERT INTO order_status_history (order_id, old_status, new_status, note, changed_by) VALUES (?, ?, ?, ?, ?)");
+            $stmt_history->bind_param("isssi", $order_id, $old_status, $new_status, $note, $admin_id);
+            $stmt_history->execute();
+            $post_params['msg'] = 'success';
+        } else {
+            $post_params['msg'] = 'error';
+        }
+    } else {
+        $post_params['msg'] = 'error';
     }
-    return "<span class='status-badge $class'>$text</span>";
+
+    header("Location: orders.php?" . http_build_query($post_params));
+    exit();
 }
 
-// LOGIC CẬP NHẬT TRẠNG THÁI
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'update_status') {
-    $order_id = intval($_POST['order_id']);
-    $new_status = $_POST['status'];
-    $note = $_POST['note'] ?? '';
-    $admin_id = $_SESSION['user_id'];
+// Các hoạt động Duyệt / Từ chối yêu cầu khách hàng giữ nguyên logic điều hướng
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'approve_request') {
+    $request_id = (int)$_POST['request_id'];
+    $order_id = (int)$_POST['order_id'];
+    $request_type = trim($_POST['request_type']);
 
-    // 1. Lấy trạng thái cũ để lưu vào lịch sử
-    $stmt = $conn->prepare("SELECT status FROM orders WHERE id = ?");
-    $stmt->bind_param("i", $order_id);
-    $stmt->execute();
-    $old_status = $stmt->get_result()->fetch_assoc()['status'];
+    $conn->begin_transaction();
+    try {
+        $stmt_current = $conn->prepare("SELECT status FROM orders WHERE id = ?");
+        $stmt_current->bind_param("i", $order_id);
+        $stmt_current->execute();
+        $old_order_status = $stmt_current->get_result()->fetch_assoc()['status'] ?? 'pending';
 
-    // 2. Cập nhật bảng orders
-    // Nếu giao hàng thành công thì tự động chuyển trạng thái thanh toán thành 'paid'
-    $payment_update = ($new_status === 'delivered') ? ", payment_status = 'paid', delivered_at = NOW()" : "";
-    $sql_update = "UPDATE orders SET status = ? $payment_update WHERE id = ?";
-    $stmt_up = $conn->prepare($sql_update);
-    $stmt_up->bind_param("si", $new_status, $order_id);
+        $target_order_status = ($request_type === 'cancel') ? 'cancelled' : 'returned';
+        $note_history = ($request_type === 'cancel') ? 'Admin đã duyệt yêu cầu hủy đơn hàng.' : 'Admin đã duyệt yêu cầu hoàn trả hàng hóa.';
+        $refund_status_update = ($request_type === 'return') ? 'processing' : 'completed';
 
-    if ($stmt_up->execute()) {
-        // 3. Lưu vào bảng order_status_history
-        $sql_hist = "INSERT INTO order_status_history (order_id, old_status, new_status, note, changed_by) 
-                    VALUES (?, ?, ?, ?, ?)";
-        $stmt_hist = $conn->prepare($sql_hist);
-        $stmt_hist->bind_param("isssi", $order_id, $old_status, $new_status, $note, $admin_id);
-        $stmt_hist->execute();
+        $stmt_approve = $conn->prepare("UPDATE order_requests SET status = 'approved', admin_id = ?, reviewed_at = NOW(), refund_status = ? WHERE id = ?");
+        $stmt_approve->bind_param("isi", $admin_id, $refund_status_update, $request_id);
+        $stmt_approve->execute();
 
-        header("Location: orders.php?msg=success");
+        $stmt_order = $conn->prepare("UPDATE orders SET status = ?, updated_at = NOW() WHERE id = ?");
+        $stmt_order->bind_param("si", $target_order_status, $order_id);
+        $stmt_order->execute();
+
+        $stmt_history = $conn->prepare("INSERT INTO order_status_history (order_id, old_status, new_status, note, changed_by) VALUES (?, ?, ?, ?, ?)");
+        $stmt_history->bind_param("isssi", $order_id, $old_order_status, $target_order_status, $note_history, $admin_id);
+        $stmt_history->execute();
+
+        $conn->commit();
+        $redirect_params['msg'] = 'approve_success';
+        header("Location: orders.php?" . http_build_query($redirect_params));
+        exit();
+    } catch (Exception $e) {
+        $conn->rollback();
+        $redirect_params['msg'] = 'error';
+        header("Location: orders.php?" . http_build_query($redirect_params));
         exit();
     }
 }
-?>
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'reject_request') {
+    $request_id = (int)$_POST['request_id'];
+    $reject_reason = trim($_POST['reject_reason']);
+
+    $stmt_reject = $conn->prepare("UPDATE order_requests SET status = 'rejected', rejection_reason = ?, admin_id = ?, reviewed_at = NOW() WHERE id = ?");
+    $stmt_reject->bind_param("sii", $reject_reason, $admin_id, $request_id);
+    $stmt_reject->execute();
+
+    $redirect_params['msg'] = 'reject_success';
+    header("Location: orders.php?" . http_build_query($redirect_params));
+    exit();
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'complete_refund') {
+    $request_id = (int)$_POST['request_id'];
+    $order_id = (int)$_POST['order_id'];
+
+    $conn->begin_transaction();
+    try {
+        $stmt_refund = $conn->prepare("UPDATE order_requests SET refund_status = 'completed', reviewed_at = NOW() WHERE id = ?");
+        $stmt_refund->bind_param("i", $request_id);
+        $stmt_refund->execute();
+
+        $note_history = "Hệ thống StudentGear đã hoàn tiền thành công cho quý khách.";
+        $current_status = 'returned';
+
+        $stmt_history = $conn->prepare("INSERT INTO order_status_history (order_id, old_status, new_status, note, changed_by) VALUES (?, ?, ?, ?, ?)");
+        $stmt_history->bind_param("isssi", $order_id, $current_status, $current_status, $note_history, $admin_id);
+        $stmt_history->execute();
+
+        $conn->commit();
+        $redirect_params['msg'] = 'refund_success';
+        header("Location: orders.php?" . http_build_query($redirect_params));
+        exit();
+    } catch (Exception $e) {
+        $conn->rollback();
+        $redirect_params['msg'] = 'error';
+        header("Location: orders.php?" . http_build_query($redirect_params));
+        exit();
+    }
+}
+
+// XỬ LÝ TRUY XUẤT SQL ĐỒNG BỘ THEO BỘ LỌC
+$search_param = "%$search%";
+$bind_types = "";
+$bind_values = [];
+
+if ($tab === 'requests') {
+    $sql = "SELECT r.*, o.order_code, o.status AS order_status, o.total_price, u.fullname, u.email 
+            FROM order_requests r 
+            JOIN orders o ON r.order_id = o.id 
+            JOIN users u ON r.user_id = u.id WHERE 1=1";
+
+    if (!empty($search)) {
+        $sql .= " AND (o.order_code LIKE ? OR u.fullname LIKE ? OR u.email LIKE ?)";
+        $bind_types .= "sss";
+        array_push($bind_values, $search_param, $search_param, $search_param);
+    }
+    if (!empty($status_filter)) {
+        $sql .= " AND r.status = ?";
+        $bind_types .= "s";
+        array_push($bind_values, $status_filter);
+    }
+    if ($month_filter !== '') {
+        $sql .= " AND MONTH(r.requested_at) = ?";
+        $bind_types .= "i";
+        array_push($bind_values, (int)$month_filter);
+    }
+    if ($year_filter !== '') {
+        $sql .= " AND YEAR(r.requested_at) = ?";
+        $bind_types .= "i";
+        array_push($bind_values, (int)$year_filter);
+    }
+
+    $sql .= " ORDER BY COALESCE(r.reviewed_at, r.requested_at) DESC, r.requested_at DESC";
+} else {
+    $sql = "SELECT o.*, u.fullname FROM orders o LEFT JOIN users u ON o.user_id = u.id WHERE 1=1";
+
+    if ($target_user_id > 0) {
+        $sql .= " AND o.user_id = ?";
+        $bind_types .= "i";
+        array_push($bind_values, $target_user_id);
+    }
+    if (!empty($search)) {
+        $sql .= " AND (o.order_code LIKE ? OR o.shipping_phone LIKE ? OR o.shipping_name LIKE ? OR u.fullname LIKE ?)";
+        $bind_types .= "ssss";
+        array_push($bind_values, $search_param, $search_param, $search_param, $search_param);
+    }
+    if (!empty($status_filter)) {
+        $sql .= " AND o.status = ?";
+        $bind_types .= "s";
+        array_push($bind_values, $status_filter);
+    }
+    if ($month_filter !== '') {
+        $sql .= " AND MONTH(o.created_at) = ?";
+        $bind_types .= "i";
+        array_push($bind_values, (int)$month_filter);
+    }
+    if ($year_filter !== '') {
+        $sql .= " AND YEAR(o.created_at) = ?";
+        $bind_types .= "i";
+        array_push($bind_values, (int)$year_filter);
+    }
+
+    $sql .= " ORDER BY COALESCE(o.updated_at, o.created_at) DESC, o.created_at DESC";
+}
+
+$stmt_list = $conn->prepare($sql);
+if (!empty($bind_types)) {
+    $stmt_list->bind_param($bind_types, ...$bind_values);
+}
+$stmt_list->execute();
+$orders_result = $stmt_list->get_result();
+
+function getStatusBadge($status)
+{
+    switch ($status) {
+        case 'pending':
+            return "<span class='status-badge badge-warning'>Chờ xử lý</span>";
+        case 'confirmed':
+            return "<span class='status-badge badge-info'>Đã xác nhận</span>";
+        case 'shipping':
+            return "<span class='status-badge badge-primary'>Đang giao</span>";
+        case 'delivered':
+            return "<span class='status-badge badge-success'>Đã giao</span>";
+        case 'cancelled':
+            return "<span class='status-badge badge-danger'>Đã hủy</span>";
+        case 'returned':
+            return "<span class='status-badge badge-secondary'>Trả hàng</span>";
+        case 'approved':
+            return "<span class='status-badge badge-success'>Đã duyệt</span>";
+        case 'rejected':
+            return "<span class='status-badge badge-danger'>Từ chối</span>";
+        default:
+            return "<span class='status-badge badge-secondary'>$status</span>";
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="vi">
 
@@ -117,346 +311,323 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
 
         <main class="main-content">
             <header class="main-content__header">
-                <h2>Quản lý đơn hàng</h2>
+                <h2><?= $tab === 'orders' ? 'Quản lý đơn hàng' : 'Yêu cầu hoàn / hủy từ khách hàng' ?></h2>
                 <div class="header-actions">
-                    <form method="GET" action="" class="search-form" style="display: flex; gap: 10px;">
-                        <div class="auth-form__group" style="margin-bottom: 0;">
-                            <input type="text" name="search" class="auth-form__input"
-                                placeholder="Mã đơn, SĐT, Tên..."
-                                value="<?= isset($_GET['search']) ? htmlspecialchars($_GET['search']) : '' ?>">
+                    <form method="GET" class="search-form" style="display:flex; gap:8px; align-items: center; flex-wrap: wrap;">
+                        <input type="hidden" name="tab" value="<?= htmlspecialchars($tab) ?>">
+                        <?php if ($target_user_id > 0): ?>
+                            <input type="hidden" name="user_id" value="<?= $target_user_id ?>">
+                        <?php endif; ?>
+
+                        <div class="auth-form__group" style="margin-bottom:0; width: 180px;">
+                            <input type="text" name="search" class="auth-form__input" placeholder="Tìm kiếm mã đơn..." value="<?= htmlspecialchars($search) ?>">
                         </div>
 
-                        <div class="auth-form__group" style="margin-bottom: 0;">
-                            <select name="status_filter" class="auth-form__input" onchange="this.form.submit()">
-                                <option value="">Tất cả trạng thái</option>
-                                <option value="pending" <?= isset($_GET['status_filter']) && $_GET['status_filter'] == 'pending' ? 'selected' : '' ?>>Chờ xử lý</option>
-                                <option value="confirmed" <?= isset($_GET['status_filter']) && $_GET['status_filter'] == 'confirmed' ? 'selected' : '' ?>>Đã xác nhận</option>
-                                <option value="shipping" <?= isset($_GET['status_filter']) && $_GET['status_filter'] == 'shipping' ? 'selected' : '' ?>>Đang giao</option>
-                                <option value="delivered" <?= isset($_GET['status_filter']) && $_GET['status_filter'] == 'delivered' ? 'selected' : '' ?>>Đã giao</option>
-                                <option value="cancelled" <?= isset($_GET['status_filter']) && $_GET['status_filter'] == 'cancelled' ? 'selected' : '' ?>>Đã hủy</option>
+                        <div class="auth-form__group" style="margin-bottom:0; width: 110px;">
+                            <select name="month_filter" class="auth-form__input" onchange="this.form.submit()">
+                                <option value="">Tất cả tháng</option>
+                                <?php for ($m = 1; $m <= 12; $m++): ?>
+                                    <option value="<?= $m ?>" <?= ($month_filter !== '' && (int)$month_filter === $m) ? 'selected' : '' ?>>Tháng <?= $m ?></option>
+                                <?php endfor; ?>
                             </select>
                         </div>
 
-                        <button type="submit" class="btn-primary" style="padding: 0 20px;">
-                            <i class="fas fa-search"></i>
-                        </button>
+                        <div class="auth-form__group" style="margin-bottom:0; width: 110px;">
+                            <select name="year_filter" class="auth-form__input" onchange="this.form.submit()">
+                                <option value="">Tất cả năm</option>
+                                <?php
+                                $current_year = (int)date('Y');
+                                for ($y = $current_year; $y >= $current_year - 3; $y--): ?>
+                                    <option value="<?= $y ?>" <?= ($year_filter !== '' && (int)$year_filter === $y) ? 'selected' : '' ?>>Năm <?= $y ?></option>
+                                <?php endfor; ?>
+                            </select>
+                        </div>
 
-                        <?php if (isset($_GET['search']) || isset($_GET['status_filter'])): ?>
-                            <a href="orders.php" class="btn-secondary" style="display: flex; align-items: center; text-decoration: none;">
-                                <i class="fas fa-undo"></i>
-                            </a>
-                        <?php endif; ?>
+                        <div class="auth-form__group" style="margin-bottom:0; width: 160px;">
+                            <select name="status_filter" class="auth-form__input" onchange="this.form.submit()">
+                                <option value="">Tất cả trạng thái</option>
+                                <?php if ($tab === 'orders'): ?>
+                                    <option value="pending" <?= $status_filter === 'pending' ? 'selected' : '' ?>>Chờ xử lý</option>
+                                    <option value="confirmed" <?= $status_filter === 'confirmed' ? 'selected' : '' ?>>Đã xác nhận</option>
+                                    <option value="shipping" <?= $status_filter === 'shipping' ? 'selected' : '' ?>>Đang giao</option>
+                                    <option value="delivered" <?= $status_filter === 'delivered' ? 'selected' : '' ?>>Đã giao</option>
+                                    <option value="cancelled" <?= $status_filter === 'cancelled' ? 'selected' : '' ?>>Đã hủy</option>
+                                    <option value="returned" <?= $status_filter === 'returned' ? 'selected' : '' ?>>Đã trả hàng</option>
+                                <?php else: ?>
+                                    <option value="pending" <?= $status_filter === 'pending' ? 'selected' : '' ?>>Chờ duyệt</option>
+                                    <option value="approved" <?= $status_filter === 'approved' ? 'selected' : '' ?>>Đã chấp nhận</option>
+                                    <option value="rejected" <?= $status_filter === 'rejected' ? 'selected' : '' ?>>Đã từ chối</option>
+                                <?php endif; ?>
+                            </select>
+                        </div>
                     </form>
                 </div>
             </header>
 
+            <div class="admin-tabs">
+                <a href="?tab=orders<?= $target_user_id > 0 ? '&user_id=' . $target_user_id : '' ?>" class="<?= $tab === 'orders' ? 'active' : '' ?>"><i class="fas fa-box"></i> Quản lý đơn hàng</a>
+                <a href="?tab=requests<?= $target_user_id > 0 ? '&user_id=' . $target_user_id : '' ?>" class="<?= $tab === 'requests' ? 'active' : '' ?>">
+                    <span><i class="fas fa-undo-alt"></i> Yêu cầu Hoàn / Hủy</span>
+                    <?php
+                    $sql_count_pending_req = "SELECT COUNT(*) AS total FROM order_requests WHERE status = 'pending'";
+                    $res_count_pending = $conn->query($sql_count_pending_req);
+                    $count_pending_req = 0;
+                    if ($res_count_pending) {
+                        $count_pending_req = (int)$res_count_pending->fetch_assoc()['total'];
+                    }
+                    if ($count_pending_req > 0): ?>
+                        <span class="count-badge"><?= $count_pending_req ?></span>
+                    <?php endif; ?>
+                </a>
+            </div>
+
+            <?php if (isset($_GET['msg'])): ?>
+                <?php if ($_GET['msg'] === 'success') echo '<div class="alert-box alert-success">Cập nhật trạng thái thành công!</div>'; ?>
+                <?php if ($_GET['msg'] === 'approve_success') echo '<div class="alert-box alert-success">Đã duyệt yêu cầu thành công! Trạng thái đơn hàng gốc đã thay đổi.</div>'; ?>
+                <?php if ($_GET['msg'] === 'reject_success') echo '<div class="alert-box alert-warning">Đã từ chối phiếu yêu cầu của khách thành công.</div>'; ?>
+                <?php if ($_GET['msg'] === 'error_invalid_flow') echo '<div class="alert-box alert-danger">Lỗi: Không được sửa lùi hoặc giữ nguyên trạng thái đơn hàng hiện tại!</div>'; ?>
+                <?php if ($_GET['msg'] === 'error_pending_to_delivered') echo '<div class="alert-box alert-danger">Lỗi bảo mật: Không được chuyển trực tiếp từ trạng thái Chờ xử lý sang Đã giao!</div>'; ?>
+                <?php if ($_GET['msg'] === 'error') echo '<div class="alert-box alert-danger">Đã xảy ra sự cố dữ liệu hệ thống.</div>'; ?>
+            <?php endif; ?>
+
             <section class="table-container">
                 <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Mã đơn</th>
-                            <th>Khách hàng</th>
-                            <th>Tổng tiền</th>
-                            <th>Thanh toán</th>
-                            <th>Trạng thái</th>
-                            <th>Ngày đặt</th>
-                            <th>Thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if ($orders->num_rows > 0): ?>
-                            <?php while ($row = $orders->fetch_assoc()): ?>
-                                <tr>
-                                    <td><strong>#<?= $row['order_code'] ?></strong></td>
-                                    <td>
-                                        <div class="user-info">
-                                            <span><?= htmlspecialchars($row['fullname'] ?? $row['shipping_name']) ?></span><br>
-                                            <small style="color: #888;"><?= $row['shipping_phone'] ?></small>
-                                        </div>
-                                    </td>
-                                    <td><b class="text-primary"><?= number_format($row['total_price'], 0, ',', '.') ?>đ</b></td>
-                                    <td>
-                                        <small><?= strtoupper($row['payment_method']) ?></small><br>
-                                        <small class="<?= $row['payment_status'] == 'paid' ? 'text-success' : 'text-danger' ?>">
-                                            (<?= $row['payment_status'] == 'paid' ? 'Đã thanh toán' : 'Chưa trả' ?>)
-                                        </small>
-                                    </td>
-                                    <td><?= getStatusBadge($row['status']) ?></td>
-                                    <td><?= date('d/m/Y H:i', strtotime($row['created_at'])) ?></td>
-                                    <td>
-                                        <button class="action-link" title="Xem chi tiết"
-                                            onclick="viewOrderDetails(<?= $row['id'] ?>, '<?= $row['order_code'] ?>')">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button class="action-link" onclick='openEditOrderModal(<?= json_encode($row) ?>)'>
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                            <?php endwhile; ?>
-                        <?php else: ?>
+                    <?php if ($tab === 'orders'): ?>
+                        <thead>
                             <tr>
-                                <td colspan="7" style="text-align: center; padding: 50px;">
-                                    <i class="fas fa-box-open" style="font-size: 40px; color: #ccc; display: block; margin-bottom: 10px;"></i>
-                                    <p>Không tìm thấy đơn hàng nào phù hợp với yêu cầu.</p>
-                                    <a href="orders.php" style="color: var(--primary-color);">Xem tất cả đơn hàng</a>
-                                </td>
+                                <th>Mã đơn</th>
+                                <th>Khách hàng</th>
+                                <th>Tổng tiền</th>
+                                <th>Thanh toán</th>
+                                <th>Trạng thái</th>
+                                <th>Ngày đặt</th>
+                                <th>Thao tác</th>
                             </tr>
-                        <?php endif; ?>
-                    </tbody>
+                        </thead>
+                        <tbody>
+                            <?php if ($orders_result->num_rows > 0): ?>
+                                <?php while ($row = $orders_result->fetch_assoc()): ?>
+                                    <tr>
+                                        <td><strong>#<?= $row['order_code'] ?></strong></td>
+                                        <td><?= htmlspecialchars($row['fullname'] ?? $row['shipping_name']) ?></td>
+                                        <td><strong><?= number_format($row['total_price'], 0, ',', '.') ?>đ</strong></td>
+                                        <td><?= strtoupper($row['payment_method']) ?> (<?= $row['payment_status'] === 'paid' ? 'Đã thanh toán' : 'Chưa trả' ?>)</td>
+                                        <td><?= getStatusBadge($row['status']) ?></td>
+                                        <td><?= date('d/m/Y H:i', strtotime($row['created_at'])) ?></td>
+                                        <td>
+                                            <div class="action-flex-wrap">
+                                                <button class="action-link" title="Xem chi tiết" onclick="viewOrderDetails(<?= $row['id'] ?>, '<?= $row['order_code'] ?>')">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button class="action-link" title="Sửa trạng thái" onclick='openEditOrderModal(<?= json_encode($row) ?>)'>
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endwhile; ?>
+                            <?php else: ?>
+                                <tr>
+                                    <td colspan="7" style="text-align:center;">Không có dữ liệu đơn hàng thỏa mãn.</td>
+                                </tr>
+                            <?php endif; ?>
+                        </tbody>
+                    <?php else: ?>
+                        <thead>
+                            <tr>
+                                <th>Mã đơn</th>
+                                <th>Khách hàng</th>
+                                <th>Loại yêu cầu</th>
+                                <th>Lý do & Mô tả</th>
+                                <th>Bằng chứng</th>
+                                <th>Hoàn tiền</th>
+                                <th>Trạng thái</th>
+                                <th>Ngày gửi</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if ($orders_result->num_rows > 0): ?>
+                                <?php while ($row = $orders_result->fetch_assoc()): ?>
+                                    <tr>
+                                        <td>#<?= $row['order_code'] ?><br><small>(<?= number_format($row['total_price'], 0, ',', '.') ?>đ)</small></td>
+                                        <td><?= htmlspecialchars($row['fullname']) ?></td>
+                                        <td>
+                                            <?= $row['request_type'] === 'cancel'
+                                                ? '<span style="color:#e53e3e; font-weight:600;"><i class="fas fa-times-circle"></i> Hủy đơn</span>'
+                                                : '<span style="color:#dd6b20; font-weight:600;"><i class="fas fa-undo"></i> Trả hàng</span>' ?>
+                                        </td>
+                                        <td>
+                                            <div style="max-width:220px; white-space:normal; word-wrap:break-word; font-size:13px;">
+                                                <strong><?= htmlspecialchars($row['reason']) ?></strong>
+                                                <?php if (!empty($row['description'])): ?>
+                                                    <br><span style="color:#718096; font-size:12px;"><?= htmlspecialchars($row['description']) ?></span>
+                                                <?php endif; ?>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <?php if (!empty($row['evidence_image'])): ?>
+                                                <img src="../../<?= htmlspecialchars($row['evidence_image']) ?>" class="evidence-img" alt="Bằng chứng" onclick="window.open(this.src)">
+                                            <?php else: ?>
+                                                <span style="color:#a0aec0; font-size:12px;">Không có</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <?php if ($row['request_type'] === 'return'): ?>
+                                                <small>Số tiền: </small><b style="color:#2b6cb0;"><?= number_format($row['refund_amount'] ?? $row['total_price'], 0, ',', '.') ?>đ</b><br>
+                                                <small style="color:#4a5568;">Trạng thái: <?= strtoupper($row['refund_status']) ?></small>
+                                            <?php else: ?>
+                                                <span style="color:#a0aec0; font-size:13px;">Không áp dụng</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <?= getStatusBadge($row['status']) ?>
+                                            <?php if ($row['status'] === 'rejected'): ?>
+                                                <br><small style="color:#e53e3e;">Lý do từ chối: <?= htmlspecialchars($row['rejection_reason']) ?></small>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td><?= date('d/m/Y H:i', strtotime($row['requested_at'])) ?></td>
+                                        <td>
+                                            <?php if ($row['status'] === 'pending'): ?>
+                                                <div class="action-flex-wrap">
+                                                    <form method="POST" style="display:inline;" onsubmit="return confirm('Xác nhận phê duyệt yêu cầu này? Đơn hàng gốc sẽ tự động đổi trạng thái tương ứng.');">
+                                                        <input type="hidden" name="action" value="approve_request">
+                                                        <input type="hidden" name="request_id" value="<?= $row['id'] ?>">
+                                                        <input type="hidden" name="order_id" value="<?= $row['order_id'] ?>">
+                                                        <input type="hidden" name="request_type" value="<?= $row['request_type'] ?>">
+                                                        <button type="submit" style="background:#28a745; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:12px;"><i class="fas fa-check"></i> Duyệt</button>
+                                                    </form>
+                                                    <button type="button" style="background:#dc3545; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:12px;" onclick="openRejectModal(<?= $row['id'] ?>)"><i class="fas fa-ban"></i> Từ chối</button>
+                                                </div>
+                                            <?php elseif ($row['status'] === 'approved' && $row['request_type'] === 'return' && $row['refund_status'] === 'processing'): ?>
+                                                <form method="POST" onsubmit="return confirm('Xác nhận bạn đã chuyển khoản / hoàn tiền thành công cho khách hàng?');">
+                                                    <input type="hidden" name="action" value="complete_refund">
+                                                    <input type="hidden" name="request_id" value="<?= $row['id'] ?>">
+                                                    <input type="hidden" name="order_id" value="<?= $row['order_id'] ?>">
+                                                    <button type="submit" style="background:#0288d1; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:12px;"><i class="fas fa-hand-holding-usd"></i> Xác nhận hoàn tiền</button>
+                                                </form>
+                                            <?php else: ?>
+                                                <span style="color:#a0aec0; font-size:13px;"><i class="fas fa-check-double"></i> Đã hoàn tất</span>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                <?php endwhile; ?>
+                            <?php else: ?>
+                                <tr>
+                                    <td colspan="9" style="text-align:center;">Không tìm thấy phiếu yêu cầu hoàn/hủy nào.</td>
+                                </tr>
+                            <?php endif; ?>
+                        </tbody>
+                    <?php endif; ?>
                 </table>
             </section>
         </main>
     </div>
 
-    <!-- VIEW DETAIL ORDER -->
     <div id="viewOrderDetailModal" class="modal">
-        <div class="modal__content" style="max-width: 1000px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px;">
+        <div class="modal__content" style="max-width: 900px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px;">
                 <h3>Chi tiết đơn hàng #<span id="detail_order_code"></span></h3>
-                <button onclick="closeModal('viewOrderDetailModal')" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+                <button onclick="closeModal('viewOrderDetailModal')" style="background: none; border: none; font-size: 24px; cursor: pointer; color:#a0aec0;">&times;</button>
             </div>
-
-            <div class="table-container" style="margin-top: 20px;">
+            <div class="table-container" style="margin-top: 15px;">
                 <table class="table">
                     <thead>
                         <tr>
-                            <th>Ảnh</th>
-                            <th>Sản phẩm</th>
+                            <th>Ảnh sản phẩm</th>
+                            <th>Tên sản phẩm</th>
                             <th>Đơn giá</th>
-                            <th>SL</th>
+                            <th>Số lượng</th>
                             <th>Thành tiền</th>
                         </tr>
                     </thead>
                     <tbody id="order_items_body"></tbody>
                 </table>
             </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
-
-                <div style="padding: 15px; background: #eef2f7; border-radius: 8px;">
-                    <h4 style="margin-bottom: 10px; color: #34495e;"><i class="fas fa-user-circle"></i> Người đặt hàng</h4>
-                    <div style="font-size: 14px; line-height: 1.6;">
-                        <p><strong>Họ tên:</strong> <span id="acc_name"></span></p>
-                        <p><strong>Email:</strong> <span id="acc_email"></span></p>
-                        <p><strong>Ngày đặt:</strong> <span id="order_date"></span></p>
-                    </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 15px;">
+                <div style="padding: 12px; background: #f7fafc; border-radius: 6px;">
+                    <h4 style="margin-bottom: 6px; color: #2d3748;"><i class="fas fa-user"></i> Thông tin tài khoản đặt mua</h4>
+                    <p>Họ tên: <span id="acc_name"></span></p>
+                    <p>Email liên hệ: <span id="acc_email"></span></p>
+                    <p>Thời gian đặt hệ thống: <span id="order_date"></span></p>
                 </div>
-
-                <div style="padding: 15px; background: #fff3e0; border-radius: 8px; border: 1px solid #ffe0b2;">
-                    <h4 style="margin-bottom: 10px; color: #e67e22;"><i class="fas fa-shipping-fast"></i> Địa chỉ giao hàng</h4>
-                    <div style="font-size: 14px; line-height: 1.6;">
-                        <p><strong>Người nhận:</strong> <span id="ship_name"></span></p>
-                        <p><strong>SĐT:</strong> <span id="ship_phone"></span></p>
-                        <p><strong>Địa chỉ:</strong> <span id="ship_address"></span></p>
-                    </div>
-                </div>
-
-            </div>
-
-            <div style="margin-top: 15px; padding: 10px; border-left: 4px solid #3498db; background: #f1f8ff;">
-                <strong>Ghi chú đơn hàng:</strong> <span id="ship_note"></span>
-            </div>
-
-            <div style="margin-top: 25px;">
-                <h4 style="margin-bottom: 15px; color: #2c3e50;"><i class="fas fa-history"></i> Lịch sử xử lý đơn hàng</h4>
-                <div id="order_history_timeline" style="max-height: 250px; overflow-y: auto; font-size: 13px;">
+                <div style="padding: 12px; background: #fffaf0; border-radius: 6px; border: 1px solid #feebc8;">
+                    <h4 style="margin-bottom: 6px; color: #dd6b20;"><i class="fas fa-truck"></i> Địa chỉ nhận hàng thực tế</h4>
+                    <p>Người nhận: <span id="ship_name"></span></p>
+                    <p>Số điện thoại: <span id="ship_phone"></span></p>
+                    <p>Địa chỉ giao: <span style="text-transform: capitalize;" id="ship_address"></span></p>
                 </div>
             </div>
-
-            <div class="modal__footer">
-                <button type="button" class="btn-secondary" onclick="closeModal('viewOrderDetailModal')">Đóng</button>
+            <div style="margin-top: 12px; padding: 10px; background: #ebf8ff; border-left: 4px solid #3182ce; border-radius: 0 4px 4px 0;">
+                <strong>Khách hàng ghi chú đơn:</strong> <span id="ship_note"></span>
+            </div>
+            <div style="margin-top: 20px;">
+                <h4 style="color:#2d3748; margin-bottom:10px;"><i class="fas fa-history"></i> Lịch sử cập nhật của đơn hàng</h4>
+                <div id="order_history_timeline" style="max-height: 200px; overflow-y: auto; padding-right: 5px;"></div>
+            </div>
+            <div class="modal__footer" style="margin-top: 20px;">
+                <button type="button" class="btn-secondary" onclick="closeModal('viewOrderDetailModal')">Đóng cửa sổ</button>
             </div>
         </div>
     </div>
-
-    <!-- EDIT MODAL ORDER -->
-    <!-- <div id="editOrderModal" class="modal">
-        <div class="modal__content">
-            <h3>Cập nhật đơn hàng #<span id="display_order_code"></span></h3>
-
-            <form action="../handlers/update_order_status.php" method="POST" class="grid-form">
-                <input type="hidden" name="id" id="edit_order_id">
-
-                <div class="auth-form__group">
-                    <label>Trạng thái đơn hàng</label>
-                    <select name="status" id="edit_order_status" class="auth-form__input">
-                        <option value="pending">Chờ xử lý</option>
-                        <option value="confirmed">Đã xác nhận</option>
-                        <option value="shipping">Đang giao hàng</option>
-                        <option value="delivered">Đã giao hàng</option>
-                        <option value="cancelled">Hủy đơn hàng</option>
-                        <option value="returned">Trả hàng</option>
-                    </select>
-                </div>
-
-                <div class="auth-form__group">
-                    <label>Ghi chú nội bộ (Lý do đổi trạng thái)</label>
-                    <textarea name="note" class="auth-form__input" placeholder="Ví dụ: Khách hẹn giao lại vào thứ 2..."></textarea>
-                </div>
-
-                <div class="modal__footer">
-                    <button type="button" class="btn-secondary" onclick="closeModal('editOrderModal')">Hủy</button>
-                    <button type="submit" class="btn-primary">Lưu thay đổi</button>
-                </div>
-            </form>
-        </div>
-    </div> -->
 
     <div id="editOrderModal" class="modal">
         <div class="modal__content">
             <h3>Cập nhật đơn hàng #<span id="display_order_code"></span></h3>
-
-            <form action="" method="POST" class="grid-form">
+            <form method="POST" style="margin-top: 15px;">
                 <input type="hidden" name="action" value="update_status">
                 <input type="hidden" name="order_id" id="edit_order_id">
 
+                <input type="hidden" name="redirect_tab" value="<?= htmlspecialchars($tab) ?>">
+                <input type="hidden" name="redirect_search" value="<?= htmlspecialchars($search) ?>">
+                <input type="hidden" name="redirect_status_filter" value="<?= htmlspecialchars($status_filter) ?>">
+                <input type="hidden" name="redirect_user_id" value="<?= $target_user_id ?>">
+                <input type="hidden" name="redirect_month_filter" value="<?= htmlspecialchars($month_filter) ?>">
+                <input type="hidden" name="redirect_year_filter" value="<?= htmlspecialchars($year_filter) ?>">
+
                 <div class="auth-form__group">
-                    <label>Trạng thái mới</label>
+                    <label style="font-weight:600; display:block; margin-bottom:6px;">Lựa chọn trạng thái xử lý mới</label>
                     <select name="status" id="edit_order_status" class="auth-form__input">
-                        <option value="pending">Chờ xử lý</option>
-                        <option value="confirmed">Đã xác nhận</option>
-                        <option value="shipping">Đang giao hàng</option>
-                        <option value="delivered">Đã giao hàng thành công</option>
-                        <option value="cancelled">Hủy đơn hàng</option>
-                        <option value="returned">Trả hàng / Hoàn tiền</option>
+                        <option value="pending" id="opt_pending">Chờ xử lý</option>
+                        <option value="confirmed" id="opt_confirmed">Đã xác nhận</option>
+                        <option value="shipping" id="opt_shipping">Đang giao hàng</option>
+                        <option value="delivered" id="opt_delivered">Đã giao hàng thành công</option>
+                        <option value="cancelled" id="opt_cancelled">Hủy đơn hàng</option>
+                        <option value="returned" id="opt_returned">Trả hàng / Hoàn tiền</option>
                     </select>
                 </div>
-
                 <div class="auth-form__group">
-                    <label>Ghi chú thay đổi (Sẽ hiển thị cho khách hàng)</label>
-                    <textarea name="note" class="auth-form__input" rows="3"
-                        placeholder="Ví dụ: Đã xác nhận qua điện thoại, shipper đang lấy hàng..."></textarea>
+                    <label style="font-weight:600; display:block; margin-bottom:6px;">Ghi chú thông báo gửi khách hàng</label>
+                    <textarea name="note" id="edit_order_note" class="auth-form__input" rows="3" placeholder="Lý do thay đổi trạng thái đơn hàng..."></textarea>
                 </div>
-
-                <div class="modal__footer">
-                    <button type="button" class="btn-secondary" onclick="closeModal('editOrderModal')">Hủy</button>
-                    <button type="submit" class="btn-primary">Cập nhật ngay</button>
+                <div class="modal__footer" style="margin-top: 20px;">
+                    <button type="button" class="btn-secondary" onclick="closeModal('editOrderModal')">Hủy bỏ</button>
+                    <button type="submit" class="btn-primary" style="background:#d0021c; color:#fff; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">Xác nhận cập nhật</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <script>
-        // Hàm mở Modal
-        function openModal(modalId) {
-            const modal = document.getElementById(modalId);
-            modal.classList.remove('is-closing');
-            modal.classList.add('is-open');
-            document.body.style.overflow = 'hidden';
-        }
+    <div id="rejectModal" class="modal">
+        <div class="modal__content">
+            <h3>Từ chối phê duyệt yêu cầu của khách hàng</h3>
+            <form method="POST" style="margin-top: 15px;">
+                <input type="hidden" name="action" value="reject_request">
+                <input type="hidden" name="request_id" id="reject_request_id">
+                <div class="auth-form__group">
+                    <label style="font-weight:600; color:#e53e3e; display:block; margin-bottom:6px;">Lý do không chấp nhận hoàn/hủy hàng</label>
+                    <textarea name="reject_reason" class="auth-form__input" rows="4" placeholder="Ví dụ: Sản phẩm đã quá hạn đổi trả..." required></textarea>
+                </div>
+                <div class="modal__footer" style="margin-top: 20px;">
+                    <button type="button" class="btn-secondary" onclick="closeModal('rejectModal')">Đóng</button>
+                    <button type="submit" style="background:#dc3545; color:#fff; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">Xác nhận từ chối</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-        // Hàm đóng Modal kèm hiệu ứng
-        function closeModal(modalId) {
-            const modal = document.getElementById(modalId);
-
-            // Thêm class closing để kích hoạt animation slideUp và fadeOut
-            modal.classList.add('is-closing');
-
-            // Đợi animation chạy xong (0.3s = 300ms) rồi mới ẩn hẳn
-            setTimeout(() => {
-                modal.classList.remove('is-open');
-                modal.classList.remove('is-closing');
-                document.body.style.overflow = 'auto';
-            }, 300);
-        }
-
-        // Cập nhật lại window.onclick để cũng có hiệu ứng khi click ra ngoài
-        window.onclick = function(event) {
-            if (event.target.classList.contains('modal')) {
-                const modalId = event.target.id;
-                closeModal(modalId);
-            }
-        }
-
-        // DETAIL MODAL
-        function viewOrderDetails(orderId, orderCode) {
-            document.getElementById('detail_order_code').innerText = orderCode;
-            const tbody = document.getElementById('order_items_body');
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Đang tải...</td></tr>';
-
-            openModal('viewOrderDetailModal');
-
-            fetch(`../handlers/get_order_details.php?id=${orderId}`)
-                .then(response => response.json())
-                .then(data => {
-                    const order = data.order;
-
-                    // 1. Điền thông tin Người đặt (Account)
-                    document.getElementById('acc_name').innerText = order.account_name || order.shipping_name;
-                    document.getElementById('acc_email').innerText = order.account_email || 'Khách vãng lai';
-                    document.getElementById('order_date').innerText = new Date(order.created_at).toLocaleString('vi-VN');
-
-                    // 2. Điền thông tin Giao hàng (Shipping)
-                    document.getElementById('ship_name').innerText = order.shipping_name;
-                    document.getElementById('ship_phone').innerText = order.shipping_phone;
-                    document.getElementById('ship_address').innerText = order.shipping_address;
-                    document.getElementById('ship_note').innerText = order.note || 'Không có ghi chú';
-
-                    // 3. Render danh sách sản phẩm (vòng lặp data.items như ở bước trước)
-                    tbody.innerHTML = '';
-                    data.items.forEach(item => {
-                        let imgSrc = item.image ? (item.image.startsWith('http') ? item.image : "../../" + item.image) : "../../assets/images/no-image.png";
-                        tbody.insertAdjacentHTML('beforeend', `
-                    <tr>
-                        <td><img src="${imgSrc}" width="40" style="border-radius:4px;"></td>
-                        <td><strong>${item.product_name}</strong></td>
-                        <td>${new Intl.NumberFormat().format(item.price)}đ</td>
-                        <td>${item.quantity}</td>
-                        <td><b>${new Intl.NumberFormat().format(item.total_price)}đ</b></td>
-                    </tr>
-                `);
-                    });
-
-                    // Thêm phần này vào bên trong fetch().then(data => { ... })
-                    const historyContainer = document.getElementById('order_history_timeline');
-                    historyContainer.innerHTML = '';
-
-                    if (data.history.length === 0) {
-                        historyContainer.innerHTML = '<p style="color: #888; text-align: center;">Chưa có lịch sử thay đổi.</p>';
-                    } else {
-                        data.history.forEach(log => {
-                            const time = new Date(log.created_at).toLocaleString('vi-VN');
-                            const admin = log.admin_name ? log.admin_name : 'Hệ thống/Khách hàng';
-                            const note = log.note ? `<br><small style="color: #666;">Ghi chú: ${log.note}</small>` : '';
-
-                            const historyItem = `
-            <div style="margin-bottom: 15px; padding-left: 20px; border-left: 2px solid #ddd; position: relative;">
-                <span style="position: absolute; left: -7px; top: 0; width: 12px; height: 12px; background: #3498db; border-radius: 50%;"></span>
-                <p style="margin: 0;">
-                    <strong>${time}</strong>: 
-                    <span class="status-badge badge-info" style="min-width: auto; padding: 2px 8px;">${log.old_status || 'Bắt đầu'}</span> 
-                    <i class="fas fa-arrow-right" style="font-size: 10px; margin: 0 5px;"></i> 
-                    <span class="status-badge badge-success" style="min-width: auto; padding: 2px 8px;">${log.new_status}</span>
-                </p>
-                <p style="margin: 5px 0 0 0; color: #555;">Thực hiện bởi: <strong>${admin}</strong> ${note}</p>
-            </div>
-        `;
-                            historyContainer.insertAdjacentHTML('beforeend', historyItem);
-                        });
-                    }
-                });
-        }
-
-        // EDIT MODAL 
-        function openEditOrderModal(order) {
-            // Điền dữ liệu vào form
-            document.getElementById('edit_order_id').value = order.id;
-            document.getElementById('display_order_code').innerText = order.order_code;
-            document.getElementById('edit_order_status').value = order.status;
-
-            // Gọi hàm mở modal đã có animation của bạn
-            openModal('editOrderModal');
-        }
-
-        // function openEditOrderModal(order) {
-        //     document.getElementById('edit_order_id').value = order.id;
-        //     document.getElementById('display_order_code').innerText = order.order_code;
-        //     document.getElementById('edit_order_status').value = order.status;
-
-        //     openModal('editOrderModal');
-        // }
-    </script>
+    <script src="../../assets/js/modal_admin.js"></script>
+    <script src="../../assets/js/order_admin.js"></script>
 </body>
 
 </html>

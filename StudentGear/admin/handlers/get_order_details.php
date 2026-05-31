@@ -24,11 +24,6 @@ if (isset($_GET['id'])) {
     $stmt_items->execute();
     $items = $stmt_items->get_result()->fetch_all(MYSQLI_ASSOC);
 
-    // echo json_encode([
-    //     'order' => $order_info,
-    //     'items' => $items
-    // ]);
-
     // Thêm vào file get_order_details.php
     // 3. Lấy lịch sử thay đổi trạng thái
     $sql_history = "SELECT h.*, a.fullname as admin_name 
